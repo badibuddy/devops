@@ -2,6 +2,8 @@
 
 Setup a highly availabile, fault tolerant wordpress architecture as follows:
 
+
+
 Having 2 Ec2 instances behind an auto scaling group behind an application loadbalancer. 
 Sping up and download code from the WP site, push media assets to Media assets S# 
 Cloudfront to access the Images 
