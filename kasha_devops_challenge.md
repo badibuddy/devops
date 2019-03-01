@@ -10,10 +10,6 @@ Terminate EC2 instance, respawn.
 Terminate DB , Multiple AZ will pick up. 
 Register a domain name. 
 
-
-
-Assumption: this is a new AWS account with defult VPC and Security group. 
-
 ### Step 1: Configure security groups
 
 Two security groups will be needed here:
@@ -118,6 +114,7 @@ Force nginx to use cloudfront to display the images this forces the ec2 instance
 
 setup a cronjob running every 5 minutes to sync media asset files to s3.
 
+```sh
  crontab -l
 # Edit this file to introduce tasks to be run by cron.
 # 
@@ -142,6 +139,7 @@ setup a cronjob running every 5 minutes to sync media asset files to s3.
 # 
 # m h  dom mon dow   command
 05 *	* * *	aws s3 sync /var/www/html/wp-content/uploads s3://kashadevopswpassets
+```
 
 Now all images are being loaded from cloudfront reducing the load on the smal EC2 instance. 
 
