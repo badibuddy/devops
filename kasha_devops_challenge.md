@@ -2,8 +2,6 @@
 
 Setup a highly availabile, fault tolerant wordpress architecture as follows:
 
-
-
 Having 2 Ec2 instances behind an auto scaling group behind an application loadbalancer. 
 Sping up and download code from the WP site, push media assets to Media assets S# 
 Cloudfront to access the Images 
@@ -17,8 +15,6 @@ Register a domain name.
 Two security groups will be needed here:
 > SG to allow for public connections to the EC2 instance on port 80 (HTTP) and 22 (SSH) - DMZ SG
 > SG to allow the SG above to communicate with RDS inscance - This secures access to the DB from this security group only - RDS SG
-
-*screenshot
 
 
 ### Step 2: Setup RDS
@@ -53,7 +49,13 @@ Create IAM role with full s3 access
 When launching the EC2 instance, we add the instance to the DMZ SG in order to get http and ssh access to access the server.
 IAM role - the IAM created for full s3 access above
 
-Under the advanced Details, pass the bootstrap script provided (kashadevopsbss.sh) for ubuntu linux distribution
+Under the advanced Details, pass the bootstrap script provided 
+
+[kashadevopsbss.sh](https://github.com/badibuddy/devops/blob/master/kashadevopsbss.sh) 
+
+for ubuntu linux distribution
+
+You ca copy paste from below: 
 
 ```sh
 #!/bin/bash
@@ -72,15 +74,14 @@ chmod -R 755 /var/www/html/
 chown -R www-data:www-data /var/www/html/
 systemctl enable nginx
 ```
+
 Add tag (optional) : standard websvr name tag
 Launch EC2 instance. 
 
 ### step 5: Configure new EC2
 Connect to the EC2 instance using pem file
 Confirm all the installations from the bootstrap were doen correctly
-
-
-A few changes on the default setup
+A few changes on the default setup for nginx to below: 
 
 ```sh	
 	location / { 
@@ -99,22 +100,20 @@ A few changes on the default setup
 		rewrite ^/wp-content/uploads/(.*)$ http://d1lmxnv1vghp59.cloudfront.net/$1 redirect;
 	}
 ```
+This enables wordpress to redirect all media access to the cloudfront dns configured, as opposed to loading this from the EC2 instance (quite small t2.micro )
 
+#### Setup the RDS database
 
-Setup the RDS database
 Grab the endpoint for mysql database
-
 Install wordpress following the prompts
-Installation complete 
+Once nstallation complete, setup wordpress as needed.
 
-Setup wordpress as needed.
+
+# What Happened next after installation of wordpress
 
 Edit the post - Hello World
 add a few photos - to test media asset folder from S3 later
-
-Force nginx to use cloudfront to display the images this forces the ec2 instance to remain small, while users are increasing. 
-
-setup a cronjob running every 5 minutes to sync media asset files to s3.
+setup a cronjob running every 5 minutes to sync media asset files to s3 media bucket (this can also be added for the code).
 
 ```sh
  crontab -l
@@ -143,48 +142,35 @@ setup a cronjob running every 5 minutes to sync media asset files to s3.
 05 *	* * *	aws s3 sync /var/www/html/wp-content/uploads s3://kashadevopswpassets
 ```
 
-Now all images are being loaded from cloudfront reducing the load on the smal EC2 instance. 
+Now all images are being loaded from cloudfront reducing the load on the small EC2 instance.
 
-Application Load balancer
-Internet facing LB
-using HTTP
-Add to Web-DMz SG
-Add taarget group
-Setup health check (use kashadevops.html)
-setup advanced health checks
-Register targets
-Create the LB
+# Route53 
 
-Route53 
 Using hosted ones, set an alias record to the loadbalancer, eg 
-
 kasha.devops.com - Alias to LB fqdn (provided by AWS)
 
-On target groups, add ec2 instance to the target, and should pass the tests (healthy)
-Access loadbalancer (kashadevopsALB-1512830521.eu-west-1.elb.amazonaws.com
-), to resolve to the EC2 instance 
-
-click on open image in new tab, and the url is that of cloudfront e.g. http://d1lmxnv1vghp59.cloudfront.net/2019/03/sandwich.jpg
 
 
+# Migrtion procedure
+_Assuming the existing wordpress installation is within the same VPC_ 
 
-From the existing EC2 instance with the current running code: Assuming it is running on ubuntu
-Install awscli (apt install awscli -y)
+1. Allow the existing EC2 instance to have full s3 write and read (IAM role was already created) 
+2. Copy recursively all the code to the wordpress code bucket, copy all media assets to the media assets s3 bucket. 
+	- From the existing EC2 instance with the current running code: Assuming it is running on ubuntu:
+	 Install awscli 
+	```sh apt install awscli -y
+	   aws cp --recursive /var/www/html s3://kashadevopscode 
+	   aws cp --recursive /var/www/html/wp-content/uploads s3://kashadevopsassets 
+	```
+	
+3. Since the new EC2 instance already has all the configurations done, this will mean the new EC2 instance will pick
+the code from s3 code bucket and start to serve the users. 
+4. Redirect the hosted domain A record to poin to the new aplication loadbalancer dns, and the "old" website 
+will now be presented from the new setup
+5. Configure ssl certificates on the EC2 instance - nginx webserver. 
 
-grant the existing EC2 instance the Full S3 IAM role (this enables the ec2 instance to communicate - read,write - with the S3 bucket
+# Monitoring
 
-Copy accross all the code to the code bucket, anc copy the media files to the assets bucket
-
-aws s3 cp --recursive /var/www/html s3://
-
-
-
->This will enable us to install all the applications we will need during setup. Handy while spinning up new instances.
->Once server has been provisioned, install wordpress by navigating to the public IP of the instance.
-
-
-the bootstrapscript to run
-setup the html file for health checks
-start nginx service
-
-
+AWS allows for monitoring via cloudwatch of Instances CPU usage, Memory usage, Disk I/O and much more. 
+I however, like to use a tool called zabbix which does this. I have not configured this on the free tire
+setup
