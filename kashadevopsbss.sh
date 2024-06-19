@@ -13,5 +13,3 @@ rm -rf latest.tar.gz
 chmod -R 755 /var/www/html/
 chown -R www-data:www-data /var/www/html/
 systemctl enable nginx
-
-I(slR&makn&^bAGhpM
