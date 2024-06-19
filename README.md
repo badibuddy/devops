@@ -5,7 +5,6 @@ To continue, you will need to have the following URLs
 ### Load Balancer public facing DNSi
 UPDATE: currently not up as I have stopped the running instances to keep the costs low
 
-http://kashadevopsalb-1512830521.eu-west-1.elb.amazonaws.com/
 
 The load balancer has the EC2 instance in the target group with health checks
 
